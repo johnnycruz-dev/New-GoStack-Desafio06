@@ -21,7 +21,6 @@ class CreateTransactionService {
   }: Request): Promise<Transaction> {
     const transactionRepository = getCustomRepository(TransactionsRepository);
     const categoryRepository = getRepository(Category);
-    let category_id = '';
 
     const { total } = await transactionRepository.getBalance();
 
@@ -29,27 +28,23 @@ class CreateTransactionService {
       throw new AppError('Insufficient amount for transaction!');
     }
 
-    const categoryExist = await categoryRepository.findOne({
+    let transactionCategory = await categoryRepository.findOne({
       where: { title: category },
     });
 
-    if (categoryExist) {
-      category_id = categoryExist.id;
-    } else {
-      const createCategory = categoryRepository.create({
+    if (!transactionCategory) {
+      transactionCategory = categoryRepository.create({
         title: category,
       });
 
-      await categoryRepository.save(createCategory);
-
-      category_id = createCategory.id;
+      await categoryRepository.save(transactionCategory);
     }
 
     const transaction = transactionRepository.create({
       title,
       value,
       type,
-      category_id,
+      category: transactionCategory,
     });
 
     await transactionRepository.save(transaction);
